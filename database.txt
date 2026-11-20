@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Churn Analysis | Data Input</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        button:hover { background: #2980b9; }
+        .result { margin-top: 20px; padding: 15px; background: #e8f4fd; border-radius: 5px; display: none; }
+        .error { background: #fee; color: #c00; }
+        .success { background: #efe; color: #0a0; }
+        .loading { text-align: center; padding: 20px; display: none; }
+        .row { display: flex; gap: 10px; }
+        .row > div { flex: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-chart-line"></i> Customer Data Input</h1>
+        <p>Enter customer details to predict churn risk</p>
+
+        <form id="customerForm">
+            <div class="row">
+                <div class="form-group">
+                    <label>Age Group *</label>
+                    <select name="age_group" required>
+                        <option value="">Select</option>
+                        <option value="18-35">18-35</option>
+                        <option value="35+">35+</option>
+                        <option value="Under 18">Under 18</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subscription Duration *</label>
+                    <select name="subscription_duration" required>
+                        <option value="">Select</option>
+                        <option value="Less than 1 month">Less than 1 month</option>
+                        <option value="1-3 months">1-3 months</option>
+                        <option value="3-6 months">3-6 months</option>
+                        <option value="6-12 months">6-12 months</option>
+                        <option value="1-2 years">1-2 years</option>
+                        <option value="More than 2 years">More than 2 years</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>Subscription Plan *</label>
+                    <select name="subscription_plan" required>
+                        <option value="">Select</option>
+                        <option value="Basic">Basic</option>
+                        <option value="Standard">Standard</option>
+                        <option value="Premium">Premium</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Monthly Spend *</label>
+                    <select name="monthly_spend" required>
+                        <option value="">Select</option>
+                        <option value="Less than ₹200">Less than ₹200</option>
+                        <option value="₹200 - ₹500">₹200 - ₹500</option>
+                        <option value="₹501 - ₹1000">₹501 - ₹1000</option>
+                        <option value="More than ₹1000">More than ₹1000</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>Usage Frequency *</label>
+                    <select name="usage_frequency" required>
+                        <option value="">Select</option>
+                        <option value="Daily">Daily</option>
+                        <option value="Often">Often</option>
+                        <option value="Rarely (once in 2-3 months)">Rarely</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Value Perception *</label>
+                    <select name="value_perception" required>
+                        <option value="">Select</option>
+                        <option value="Excellent value">Excellent value</option>
+                        <option value="Good value">Good value</option>
+                        <option value="Average">Average</option>
+                        <option value="Poor value">Poor value</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>NPS Score (0-10) *</label>
+                    <input type="number" name="nps_score" min="0" max="10" required>
+                </div>
+                <div class="form-group">
+                    <label>Content Satisfaction (1-5) *</label>
+                    <input type="number" name="content_satisfaction" min="1" max="5" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>Churn Likelihood *</label>
+                    <select name="churn_likelihood" required>
+                        <option value="">Select</option>
+                        <option value="Very unlikely">Very unlikely</option>
+                        <option value="Not sure">Not sure</option>
+                        <option value="Very likely">Very likely</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Switching Behavior *</label>
+                    <select name="switching_behavior" required>
+                        <option value="">Select</option>
+                        <option value="No changes">No changes</option>
+                        <option value="Yes, switched completely">Switched completely</option>
+                        <option value="Yes, added new one">Added new one</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>Account Sharing *</label>
+                    <select name="account_sharing" required>
+                        <option value="">Select</option>
+                        <option value="No, only I use it">Only me</option>
+                        <option value="Yes, with family">With family</option>
+                        <option value="Yes, with friends">With friends</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Competitor Awareness *</label>
+                    <select name="competitor_awareness" required>
+                        <option value="">Select</option>
+                        <option value="No, satisfied with current">Satisfied</option>
+                        <option value="Yes, but not seriously">Aware but not considering</option>
+                        <option value="Yes, actively considering">Actively considering</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>Bundling Preference *</label>
+                    <select name="bundling_preference" required>
+                        <option value="">Select</option>
+                        <option value="Yes, definitely">Yes, definitely</option>
+                        <option value="Maybe, depends on price">Maybe</option>
+                        <option value="No, prefer separate">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Payment Method *</label>
+                    <select name="payment_method" required>
+                        <option value="">Select</option>
+                        <option value="Monthly auto-renewal">Monthly auto-renewal</option>
+                        <option value="Annual payment">Annual payment</option>
+                        <option value="Pay as you go">Pay as you go</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Primary Platform *</label>
+                <select name="primary_platform" required>
+                    <option value="">Select</option>
+                    <option value="Netflix">Netflix</option>
+                    <option value="Amazon Prime Video">Amazon Prime Video</option>
+                    <option value="Disney+ Hotstar">Disney+ Hotstar</option>
+                    <option value="Sony LIV">Sony LIV</option>
+                    <option value="YouTube Premium">YouTube Premium</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Suggestions (Optional)</label>
+                <textarea name="suggestions" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Select Algorithm</label>
+                <select name="algorithm">
+                    <option value="random_forest">Random Forest (Recommended)</option>
+                    <option value="logistic_regression">Logistic Regression</option>
+                </select>
+            </div>
+
+            <button type="submit"><i class="fas fa-rocket"></i> Submit & Predict</button>
+            <button type="button" id="clearBtn"><i class="fas fa-trash"></i> Clear</button>
+            <button type="button" id="demoBtn"><i class="fas fa-magic"></i> Load Demo</button>
+        </form>
+
+        <div class="loading" id="loading"><i class="fas fa-spinner fa-spin"></i> Processing...</div>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('customerForm');
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+
+        // Demo data
+        document.getElementById('demoBtn').onclick = () => {
+            form.age_group.value = '18-35';
+            form.subscription_duration.value = '6-12 months';
+            form.subscription_plan.value = 'Standard';
+            form.monthly_spend.value = '₹200 - ₹500';
+            form.usage_frequency.value = 'Often';
+            form.value_perception.value = 'Average';
+            form.nps_score.value = '7';
+            form.content_satisfaction.value = '4';
+            form.churn_likelihood.value = 'Not sure';
+            form.switching_behavior.value = 'No changes';
+            form.account_sharing.value = 'No, only I use it';
+            form.competitor_awareness.value = 'No, satisfied with current';
+            form.bundling_preference.value = 'Maybe, depends on price';
+            form.payment_method.value = 'Monthly auto-renewal';
+            form.primary_platform.value = 'Netflix';
+        };
+
+        // Clear form
+        document.getElementById('clearBtn').onclick = () => form.reset();
+
+        // Submit form
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                if (value) data[key] = value;
+            }
+            
+            // Convert numbers
+            if (data.nps_score) data.nps_score = parseInt(data.nps_score);
+            if (data.content_satisfaction) data.content_satisfaction = parseInt(data.content_satisfaction);
+            
+            console.log('Sending:', data);
+            
+            loadingDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/data/customer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                console.log('Result:', result);
+                
+                if (result.success) {
+                    const prob = (result.prediction?.churn_probability * 100).toFixed(1);
+                    resultDiv.innerHTML = `
+                        <h3>✅ Customer Saved! (ID: ${result.data.id})</h3>
+                        <p><strong>Churn Probability:</strong> ${prob}%</p>
+                        <p><strong>Risk Level:</strong> ${result.prediction?.risk_level || 'Medium'}</p>
+                        <p><strong>Algorithm Used:</strong> ${data.algorithm === 'random_forest' ? 'Random Forest' : 'Logistic Regression'}</p>
+                        <p><strong>Recommendation:</strong> ${result.prediction?.recommendations?.[0] || 'Monitor customer behavior'}</p>
+                    `;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = `<p class="error">Error: ${result.message}</p>`;
+                    resultDiv.className = 'result error';
+                }
+                resultDiv.style.display = 'block';
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Connection error: ${error.message}</p>`;
+                resultDiv.className = 'result error';
+                resultDiv.style.display = 'block';
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        };
+    </script>
+</body>
+</html>

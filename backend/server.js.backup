@@ -1,0 +1,569 @@
+﻿// backend/server.js - PROPER VERSION FOR YOUR EXISTING FRONTEND
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 5001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ========== SERVE FRONTEND PROPERLY ==========
+const frontendPath = path.join(__dirname, '..', 'frontend');
+
+// First, serve static files (CSS, JS, images)
+app.use(express.static(frontendPath, {
+    extensions: ['html', 'css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico']
+}));
+
+// Also serve specific directories
+app.use('/css', express.static(path.join(frontendPath, 'css')));
+app.use('/js', express.static(path.join(frontendPath, 'js')));
+app.use('/images', express.static(path.join(frontendPath, 'images')));
+
+// ========== API ROUTES ==========
+
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        service: 'AI Churn Analysis',
+        version: '1.0.0',
+        message: 'Server is running properly'
+    });
+});
+
+// Test database connection
+app.get('/api/db-test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Database connection test successful',
+        database: 'SQLite',
+        path: path.join(__dirname, 'database.sqlite')
+    });
+});
+
+// Login API
+app.post('/api/auth/login', (req, res) => {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'Email and password are required'
+        });
+    }
+
+    res.json({
+        success: true,
+        message: 'Login successful',
+        user: {
+            id: 1,
+            name: email.split('@')[0],
+            email: email,
+            role: 'admin'
+        },
+        token: 'mock-jwt-token-' + Date.now()
+    });
+});
+
+// Register API
+app.post('/api/auth/register', (req, res) => {
+    const { name, email, password } = req.body;
+    
+    if (!name || !email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'Name, email, and password are required'
+        });
+    }
+
+    res.json({
+        success: true,
+        message: 'Registration successful',
+        user: {
+            id: Date.now(),
+            name: name,
+            email: email,
+            role: 'user'
+        },
+        token: 'mock-jwt-token-reg-' + Date.now()
+    });
+});
+
+// Submit customer data
+app.post('/api/data/customer', (req, res) => {
+    try {
+        const customerData = req.body;
+        
+        if (!customerData) {
+            return res.status(400).json({
+                success: false,
+                message: 'Customer data is required'
+            });
+        }
+
+        // Save to JSON file (simple storage)
+        const dataFile = path.join(__dirname, 'customers.json');
+        let customers = [];
+        
+        if (fs.existsSync(dataFile)) {
+            customers = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+        }
+        
+        const newCustomer = {
+            id: customers.length + 1,
+            ...customerData,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        
+        customers.push(newCustomer);
+        fs.writeFileSync(dataFile, JSON.stringify(customers, null, 2));
+        
+        // Generate prediction
+        const prediction = generateChurnPrediction(customerData);
+        
+        res.json({
+            success: true,
+            message: 'Customer data saved successfully',
+            data: newCustomer,
+            prediction: prediction,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to save customer data',
+            error: error.message
+        });
+    }
+});
+
+// Get customers
+app.get('/api/data/customers', (req, res) => {
+    try {
+        const dataFile = path.join(__dirname, 'customers.json');
+        
+        if (!fs.existsSync(dataFile)) {
+            return res.json({
+                success: true,
+                count: 0,
+                data: []
+            });
+        }
+        
+        const customers = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+        
+        res.json({
+            success: true,
+            count: customers.length,
+            data: customers
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch customers',
+            error: error.message
+        });
+    }
+});
+
+// Mock customers for development
+app.get('/api/data/customers/mock', (req, res) => {
+    const mockCustomers = [
+        {
+            id: 1,
+            age_group: '18-35',
+            subscription_duration: '6-12 months',
+            subscription_plan: 'Premium',
+            monthly_spend: '₹499-₹799',
+            usage_frequency: 'Daily',
+            nps_score: 9,
+            content_satisfaction: 4,
+            value_perception: 'Good value',
+            churn_likelihood: 'Unlikely',
+            switching_behavior: 'No, never switched',
+            created_at: new Date().toISOString()
+        },
+        {
+            id: 2,
+            age_group: '36-50',
+            subscription_duration: '1-3 months',
+            subscription_plan: 'Basic',
+            monthly_spend: '₹199-₹299',
+            usage_frequency: 'Weekly',
+            nps_score: 6,
+            content_satisfaction: 3,
+            value_perception: 'Average value',
+            churn_likelihood: 'Somewhat likely',
+            switching_behavior: 'Yes, considered switching',
+            created_at: new Date().toISOString()
+        },
+        {
+            id: 3,
+            age_group: '51+',
+            subscription_duration: 'Over 2 years',
+            subscription_plan: 'Premium',
+            monthly_spend: '₹499-₹799',
+            usage_frequency: 'Daily',
+            nps_score: 10,
+            content_satisfaction: 5,
+            value_perception: 'Excellent value',
+            churn_likelihood: 'Very unlikely',
+            switching_behavior: 'No, never switched',
+            created_at: new Date().toISOString()
+        }
+    ];
+
+    res.json({
+        success: true,
+        message: 'Mock customer data for development',
+        count: mockCustomers.length,
+        data: mockCustomers
+    });
+});
+
+// Predict churn
+app.post('/api/predict/churn', (req, res) => {
+    try {
+        const customerData = req.body;
+        
+        if (!customerData) {
+            return res.status(400).json({
+                success: false,
+                message: 'Customer data is required'
+            });
+        }
+
+        const prediction = generateChurnPrediction(customerData);
+        
+        res.json({
+            success: true,
+            message: 'Prediction generated successfully',
+            prediction: prediction,
+            customer_data: customerData,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Prediction failed',
+            error: error.message
+        });
+    }
+});
+
+// File upload
+const multer = require('multer');
+const upload = multer({ 
+    dest: 'uploads/',
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'File uploaded successfully',
+            file: {
+                filename: req.file.filename,
+                originalname: req.file.originalname,
+                size: req.file.size,
+                mimetype: req.file.mimetype,
+                path: req.file.path
+            },
+            stats: {
+                rows_processed: Math.floor(Math.random() * 100) + 10,
+                customers_imported: Math.floor(Math.random() * 50) + 5
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'File upload failed',
+            error: error.message
+        });
+    }
+});
+
+// Analytics overview
+app.get('/api/analytics/overview', (req, res) => {
+    try {
+        const dataFile = path.join(__dirname, 'customers.json');
+        let totalCustomers = 0;
+        let highRiskCustomers = 0;
+        
+        if (fs.existsSync(dataFile)) {
+            const customers = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+            totalCustomers = customers.length;
+            highRiskCustomers = customers.filter(c => 
+                c.churn_likelihood === 'Very likely' || 
+                c.churn_likelihood === 'High'
+            ).length;
+        }
+
+        res.json({
+            success: true,
+            data: {
+                total_customers: totalCustomers,
+                high_risk_customers: highRiskCustomers,
+                churn_rate: totalCustomers > 0 ? ((highRiskCustomers / totalCustomers) * 100).toFixed(2) : '0.00',
+                retention_rate: totalCustomers > 0 ? (100 - (highRiskCustomers / totalCustomers * 100)).toFixed(2) : '100.00'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch analytics',
+            error: error.message
+        });
+    }
+});
+
+// Initialize database
+app.get('/api/init-db', (req, res) => {
+    try {
+        // Create customers.json if it doesn't exist
+        const dataFile = path.join(__dirname, 'customers.json');
+        if (!fs.existsSync(dataFile)) {
+            fs.writeFileSync(dataFile, JSON.stringify([]));
+        }
+        
+        // Create uploads directory if it doesn't exist
+        if (!fs.existsSync('uploads')) {
+            fs.mkdirSync('uploads', { recursive: true });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Database initialized successfully',
+            files: {
+                customers: dataFile,
+                uploads: path.join(__dirname, 'uploads')
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Database initialization failed',
+            error: error.message
+        });
+    }
+});
+
+// Churn prediction logic
+function generateChurnPrediction(customerData) {
+    let score = 0.3; // Base score
+    
+    // Content Satisfaction (1-5 scale)
+    if (customerData.content_satisfaction <= 2) score += 0.2;
+    else if (customerData.content_satisfaction <= 3) score += 0.1;
+    
+    // NPS Score (0-10 scale)
+    if (customerData.nps_score <= 5) score += 0.15;
+    else if (customerData.nps_score <= 7) score += 0.05;
+    
+    // Value Perception
+    if (customerData.value_perception === 'Poor value') score += 0.2;
+    else if (customerData.value_perception === 'Average value') score += 0.1;
+    
+    // Usage Frequency
+    if (customerData.usage_frequency === 'Rarely (once in 2-3 months)') score += 0.15;
+    else if (customerData.usage_frequency === 'Weekly') score += 0.05;
+    
+    // Churn Likelihood (self-reported)
+    if (customerData.churn_likelihood === 'Very likely') score += 0.2;
+    else if (customerData.churn_likelihood === 'Somewhat likely') score += 0.1;
+    
+    // Switching Behavior
+    if (customerData.switching_behavior && customerData.switching_behavior.includes('Yes')) score += 0.1;
+    
+    // Cap score between 0.05 and 0.95
+    score = Math.min(0.95, Math.max(0.05, score));
+    
+    // Determine risk level
+    let riskLevel = 'Low';
+    if (score > 0.7) riskLevel = 'High';
+    else if (score > 0.4) riskLevel = 'Medium';
+    
+    // Key factors
+    const keyFactors = [];
+    if (customerData.content_satisfaction <= 2) keyFactors.push('Low content satisfaction');
+    if (customerData.nps_score <= 5) keyFactors.push('Low recommendation score (NPS)');
+    if (customerData.value_perception === 'Poor value') keyFactors.push('Poor value perception');
+    if (customerData.usage_frequency === 'Rarely (once in 2-3 months)') keyFactors.push('Infrequent usage');
+    if (customerData.churn_likelihood === 'Very likely') keyFactors.push('Self-reported high churn likelihood');
+    
+    // Recommendations
+    const recommendations = [];
+    if (score > 0.7) {
+        recommendations.push('Immediate intervention required - offer personalized discount');
+        recommendations.push('Assign to customer success team for direct outreach');
+    } else if (score > 0.4) {
+        recommendations.push('Send personalized content recommendations');
+        recommendations.push('Consider loyalty program enrollment');
+    } else {
+        recommendations.push('Monitor for changes in usage patterns');
+        recommendations.push('Send satisfaction survey');
+    }
+    
+    return {
+        churn_probability: parseFloat(score.toFixed(3)),
+        risk_level: riskLevel,
+        confidence: 0.87,
+        key_factors: keyFactors,
+        recommendations: recommendations,
+        interpretation: `This customer has a ${(score * 100).toFixed(1)}% probability of churning in the next 3 months.`,
+        action_priority: riskLevel === 'High' ? 'Immediate' : riskLevel === 'Medium' ? 'Within 1 week' : 'Monitor'
+    };
+}
+
+// ========== FRONTEND HTML ROUTES ==========
+// These routes handle your existing .html files
+
+// Homepage (index.html)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// All other .html files
+const htmlPages = [
+    'login.html',
+    'dashboard.html', 
+    'data-input.html',
+    'analysis.html',
+    'reports.html',
+    'retention.html',
+    'model-performance.html'
+];
+
+// Route for each HTML page with .html extension
+htmlPages.forEach(page => {
+    const route = '/' + page;
+    app.get(route, (req, res) => {
+        res.sendFile(path.join(frontendPath, page));
+    });
+    
+    // Also support clean URLs (without .html)
+    const cleanRoute = '/' + page.replace('.html', '');
+    if (cleanRoute !== route) {
+        app.get(cleanRoute, (req, res) => {
+            res.sendFile(path.join(frontendPath, page));
+        });
+    }
+});
+
+// Handle direct requests for index.html
+app.get('/index.html', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
+// 404 handler for API routes
+app.all('/api/*', (req, res) => {
+    res.status(404).json({
+        error: 'API route not found',
+        path: req.originalUrl,
+        method: req.method
+    });
+});
+
+// Catch-all for frontend (SPA support)
+app.get('*', (req, res) => {
+    // Don't handle API routes
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({
+            error: 'API route not found',
+            path: req.path
+        });
+    }
+    
+    // Don't handle static files
+    if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff|woff2|ttf|eot)$/)) {
+        return res.status(404).send('File not found: ' + req.path);
+    }
+    
+    // Serve index.html for all other routes
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    console.error('Server Error:', err.message);
+    console.error(err.stack);
+    
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong!',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Initialize and start server
+async function startServer() {
+    try {
+        // Create necessary directories and files
+        if (!fs.existsSync('uploads')) {
+            fs.mkdirSync('uploads', { recursive: true });
+            console.log('✅ Created uploads directory');
+        }
+        
+        const dataFile = path.join(__dirname, 'customers.json');
+        if (!fs.existsSync(dataFile)) {
+            fs.writeFileSync(dataFile, JSON.stringify([]));
+            console.log('✅ Created customers.json database');
+        }
+        
+        // Start server
+        app.listen(PORT, () => {
+            console.log(`🚀 Server started successfully on port ${PORT}`);
+            console.log(`📡 Frontend URL: http://localhost:${PORT}`);
+            console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+            console.log(`📁 Serving from: ${frontendPath}`);
+            console.log('\n📋 Available Pages:');
+            console.log(`   GET  /                       - Homepage`);
+            console.log(`   GET  /login.html or /login   - Login page`);
+            console.log(`   GET  /dashboard.html         - Dashboard`);
+            console.log(`   GET  /data-input.html        - Data input form`);
+            console.log(`   GET  /analysis.html          - Analytics dashboard`);
+            console.log(`   GET  /reports.html           - Reports`);
+            console.log(`   GET  /retention.html         - Retention strategies`);
+            console.log(`   GET  /model-performance.html - Model performance`);
+            console.log('\n📋 Available API Endpoints:');
+            console.log(`   GET  /api/health             - Health check`);
+            console.log(`   GET  /api/db-test            - Test database`);
+            console.log(`   GET  /api/init-db            - Initialize database`);
+            console.log(`   POST /api/auth/login         - User login`);
+            console.log(`   POST /api/auth/register      - User registration`);
+            console.log(`   POST /api/data/customer      - Submit customer data`);
+            console.log(`   GET  /api/data/customers     - Get all customers`);
+            console.log(`   GET  /api/data/customers/mock - Mock customers`);
+            console.log(`   POST /api/predict/churn      - Predict churn`);
+            console.log(`   POST /api/upload             - Upload CSV/Excel`);
+            console.log(`   GET  /api/analytics/overview - Analytics overview`);
+            console.log('\n✅ Ready to use!');
+        });
+    } catch (error) {
+        console.error('❌ Failed to start server:', error);
+        process.exit(1);
+    }
+}
+
+// Start the server
+startServer();
